@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -51,6 +52,21 @@ public class Day4 {
         //part 2
         System.out.println(passports.stream().filter(p -> Day4.isValidPart1(p, requiredFields))
                 .filter(Day4::isValidPart2).count());
+
+        //start another sol
+        Stream<Map<String, String>> passportFieldsStream = passports.stream()
+                .map(pp -> Arrays.asList(pp.split(" ")))
+                .map(fields -> fields.stream()
+                        .map(field -> field.split(":"))
+                        .collect(Collectors.toMap(f -> f[0], f -> f[1])))
+                .filter(fieldsMap -> fieldsMap.keySet().containsAll(requiredFields));
+
+        List<Map<String, String>> pfmapList = passportFieldsStream.collect(Collectors.toList());
+        //part 1
+        System.out.println(pfmapList.size());
+        //part2
+        System.out.println(pfmapList.stream().filter(Day4::isValidMap).count());
+        //end another sol
     }
 
     private static boolean isValidPart1(String passport, Set<String> requiredFields) {
@@ -59,55 +75,73 @@ public class Day4 {
         return f.size() == 7;
     }
 
+    private static boolean isValidMap(Map<String, String> passport) {
+        for (Map.Entry<String, String> entry : passport.entrySet()) {
+            String key = entry.getKey();
+            String value = entry.getValue();
+            if (!isValidField(key, value)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean isValidField(String key, String value) {
+        if (key.equals("byr")) {
+            int year = Integer.parseInt(value);
+            if (value.length() != 4 || year < 1920 || year > 2002) {
+                return false;
+            }
+        } else if (key.equals("iyr")) {
+            int year = Integer.parseInt(value);
+            if (value.length() != 4 || year < 2010 || year > 2020) {
+                return false;
+            }
+        } else if (key.equals("eyr")) {
+            int year = Integer.parseInt(value);
+            if (value.length() != 4 || year < 2020 || year > 2030) {
+                return false;
+            }
+        } else if (key.equals("hgt")) {
+            String val = value.substring(0, value.length() - 2);
+            if (value.endsWith("cm")) {
+                int len = Integer.parseInt(val);
+                if (len < 150 || len > 193) {
+                    return false;
+                }
+            } else if (value.endsWith("in")) {
+                int len = Integer.parseInt(val);
+                if (len < 59 || len > 76) {
+                    return false;
+                }
+            } else {
+                return false;
+            }
+        } else if (key.equals("hcl")) {
+            if (!isValidHex(value)) {
+                return false;
+            }
+        } else if (key.equals("ecl")) {
+            if (!(value.equals("amb") || value.equals("blu") || value.equals("brn")
+                    || value.equals("gry") || value.equals("grn") || value.equals("hzl")
+                    || value.equals("oth"))) {
+                return false;
+            }
+        } else if (key.equals("pid")) {
+            if (!isValidPid(value)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     private static boolean isValidPart2(String passport) {
         String[] p = passport.split(":| ");
         for (int i = 0; i < p.length; i = i + 2) {
             String key = p[i];
             String value = p[i + 1];
-            if (key.equals("byr")) {
-                int year = Integer.parseInt(value);
-                if (value.length() != 4 || year < 1920 || year > 2002) {
-                    return false;
-                }
-            } else if (key.equals("iyr")) {
-                int year = Integer.parseInt(value);
-                if (value.length() != 4 || year < 2010 || year > 2020) {
-                    return false;
-                }
-            } else if (key.equals("eyr")) {
-                int year = Integer.parseInt(value);
-                if (value.length() != 4 || year < 2020 || year > 2030) {
-                    return false;
-                }
-            } else if (key.equals("hgt")) {
-                String val = value.substring(0, value.length() - 2);
-                if (value.endsWith("cm")) {
-                    int len = Integer.parseInt(val);
-                    if (len < 150 || len > 193) {
-                        return false;
-                    }
-                } else if (value.endsWith("in")) {
-                    int len = Integer.parseInt(val);
-                    if (len < 59 || len > 76) {
-                        return false;
-                    }
-                } else {
-                    return false;
-                }
-            } else if (key.equals("hcl")) {
-                if (!isValidHex(value)) {
-                    return false;
-                }
-            } else if (key.equals("ecl")) {
-                if (!(value.equals("amb") || value.equals("blu") || value.equals("brn")
-                        || value.equals("gry") || value.equals("grn") || value.equals("hzl")
-                        || value.equals("oth"))) {
-                    return false;
-                }
-            } else if (key.equals("pid")) {
-                if (!isValidPid(value)) {
-                    return false;
-                }
+            if (!isValidField(key, value)) {
+                return false;
             }
         }
         return true;
