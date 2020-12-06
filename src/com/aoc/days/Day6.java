@@ -2,14 +2,12 @@ package com.aoc.days;
 
 import static com.aoc.Utils.readFileByLine;
 
-import com.aoc.PasswordPolicy;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -21,67 +19,41 @@ public class Day6 {
         String fileName = "input6.txt";
         Stream<String> input = readFileByLine(fileName);
 
-        List<String> lines = input.collect(Collectors.toList());
         List<String> passports = new ArrayList<>();
-        String passport = "";
-        for (String line : lines) {
-            String p = line.trim();
-            if (p.equals("")) {
-                passports.add(passport.trim());
-                passport = "";
+        List<Long> groups = new ArrayList<>();
+        passports.add("");
+        groups.add(0L);
+        AtomicInteger ind = new AtomicInteger();
+        AtomicLong groupCount = new AtomicLong();
+        input.forEach(line -> {
+            if (line.trim().equals("")) {
+                ind.getAndIncrement();
+                passports.add("");
+                groups.add(0L);
+                groupCount.set(0);
             } else {
-                passport = passport + p;
+                passports.set(ind.get(), passports.get(ind.get()) + line);
+                groups.set(ind.get(), groupCount.incrementAndGet());
             }
-        }
-        // issue was end of file missing empty lines handling
-        // adding last line from file
-        passports.add(passport.trim());
+        });
 
-        System.out.println(passports.get(0));
+        long sum = passports.stream()
+                .map(s -> s.chars().distinct().count())
+                .mapToLong(v -> v).sum();
 
-        long sum = passports.stream().map(s -> {
-            Set<String> c = new HashSet<>();
-            for (int i = 0; i < s.length(); i++) {
-                c.add(s.substring(i,i+1));
-            }
-            return c.size();
-        }).mapToLong(v->v).sum();
         System.out.println(sum);
-
-        System.out.println(part2(lines));
+        System.out.println(part2(passports, groups));
     }
 
-    private static long part2(List<String> lines){
-
-        List<String> passports = new ArrayList<>();
-        String passport = "";
-        for (String line : lines) {
-            String p = line.trim();
-            if (p.equals("")) {
-                passports.add(passport.trim());
-                passport = "";
-            } else {
-                passport = passport + " " + p;
-            }
-        }
-        // issue was end of file missing empty lines handling
-        // adding last line from file
-        passports.add(passport.trim());
-
-        long sum = passports.stream().map(group -> {
-            List<String> individuals = Arrays.asList(group.split(" "));
-            Map<String, Integer> c = new HashMap<>();
-            for (String individual : individuals) {
-                for (int i = 0; i < individual.length(); i++) {
-                    int count = c.getOrDefault(individual.substring(i,i+1), 0);
-                    c.put(individual.substring(i,i+1), count + 1);
-                }
-            }
-            return c.entrySet().stream().filter(es -> es.getValue() == individuals.size()).count();
-
-        }).mapToLong(v->v).sum();
-
-        return sum;
+    private static long part2(List<String> passports, List<Long> groups) {
+        AtomicInteger ind = new AtomicInteger(0);
+        return passports.stream().map(group -> {
+            Map<String, Long> mc = group.chars()
+                    .mapToObj(c -> Character.toString((char) c))
+                    .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+            long groupCount = groups.get(ind.getAndIncrement());
+            return mc.entrySet().stream().filter(es -> es.getValue().equals(groupCount)).count();
+        }).mapToLong(v -> v).sum();
     }
 
 }
